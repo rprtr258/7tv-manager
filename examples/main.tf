@@ -1,81 +1,90 @@
 terraform {
   required_providers {
-    hashicups = {
+    seventv = {
       version = "0.0.1"
       source = "local/rprtr258/seventv"
     }
   }
 }
 
-provider "hashicups" {
+provider "seventv" {
   username = "education"
   password = "test123"
 }
 
-resource "hashicups_order" "sample" {}
-
-output "sample_order" {
-  value = hashicups_order.sample
-}
-
-# coffee_name = "Packer Spiced Latte"
-variable "coffee_name" {
-  type    = string
-  default = "Vagrante espresso"
-}
-
-data "hashicups_coffees" "all" {}
-
-# Returns all coffees
-output "all_coffees" {
-  value = data.hashicups_coffees.all.coffees
-}
-
-# Only returns packer spiced latte
-output "coffee" {
-  value = {
-    for coffee in data.hashicups_coffees.all.coffees :
-    coffee.id => coffee
-    if coffee.name == var.coffee_name
+resource "seventv_emoteset" "main_emoteset" {
+  emotes {
+    id = "61801776e0801fb98788c028"
+    name = "MMMM"
+  }
+  emotes {
+    id = "60a1babb3c3362f9a4b8b33a"
+    name = "catKiss"
   }
 }
 
-# output "psl" {
-#   value = module.psl.coffee
+# output "sample_order" {
+#   value = seventv_order.sample
 # }
 
-data "hashicups_order" "order" {
-  id = 1
-}
+# # coffee_name = "Packer Spiced Latte"
+# variable "coffee_name" {
+#   type    = string
+#   default = "Vagrante espresso"
+# }
 
-output "order" {
-  value = data.hashicups_order.order
-}
+# data "seventv_coffees" "all" {}
 
-resource "hashicups_order" "edu" {
-  items {
-    coffee {
-      id = 3
-    }
-    quantity = 2
-  }
-  items {
-    coffee {
-      id = 2
-    }
-    quantity = 3
-  }
-}
+# # Returns all coffees
+# output "all_coffees" {
+#   value = data.seventv_coffees.all.coffees
+# }
 
-output "edu_order" {
-  value = hashicups_order.edu
-}
+# # Only returns packer spiced latte
+# output "coffee" {
+#   value = {
+#     for coffee in data.seventv_coffees.all.coffees :
+#     coffee.id => coffee
+#     if coffee.name == var.coffee_name
+#   }
+# }
+
+# # output "psl" {
+# #   value = module.psl.coffee
+# # }
+
+# data "seventv_order" "order" {
+#   id = 1
+# }
+
+# output "order" {
+#   value = data.seventv_order.order
+# }
+
+# resource "seventv_order" "edu" {
+#   items {
+#     coffee {
+#       id = 3
+#     }
+#     quantity = 2
+#   }
+#   items {
+#     coffee {
+#       id = 2
+#     }
+#     quantity = 3
+#   }
+# }
+
+# output "edu_order" {
+#   value = seventv_order.edu
+# }
 
 
-data "hashicups_order" "first" {
-  id = 1
-}
+# data "seventv_order" "first" {
+#   id = 1
+# }
 
-output "first_order" {
-  value = data.hashicups_order.first
-}
+# output "first_order" {
+#   value = data.seventv_order.first
+# }

@@ -27,7 +27,7 @@ func New() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"emoteset": emoteset.New(),
+			"seventv_emoteset": emoteset.New(),
 		},
 		// DataSourcesMap: map[string]*schema.Resource{
 		// 	"hashicups_coffees":     dataSourceCoffees(),

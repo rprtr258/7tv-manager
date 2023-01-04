@@ -17,21 +17,21 @@ func New() *schema.Resource {
 		UpdateContext: update,
 		DeleteContext: delete,
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				// Computed: true,
+			"id": {
+				Type: schema.TypeString,
+				// Required: true,
+				Computed: true,
 			},
-			"emotes": &schema.Schema{
+			"emotes": {
 				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id": &schema.Schema{
+						"id": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"name": &schema.Schema{
+						"name": {
 							Type:     schema.TypeString,
 							Computed: true,
 							Optional: true,
