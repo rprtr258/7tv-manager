@@ -3,7 +3,7 @@ HOSTNAME=local
 NAMESPACE=rprtr258
 NAME=seventv
 BINARY=terraform-provider-${NAME}
-VERSION=0.0.0
+VERSION=0.0.1
 OS_ARCH=linux_amd64
 
 default: install

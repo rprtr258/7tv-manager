@@ -14,20 +14,20 @@ import (
 func New() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			// "username": &schema.Schema{
-			// 	Type:        schema.TypeString,
-			// 	Optional:    true,
-			// 	DefaultFunc: schema.EnvDefaultFunc("7TV_USERNAME", nil),
-			// },
-			// "password": &schema.Schema{
-			// 	Type:        schema.TypeString,
-			// 	Optional:    true,
-			// 	Sensitive:   true,
-			// 	DefaultFunc: schema.EnvDefaultFunc("7TV_PASSWORD", nil),
-			// },
+			"username": {
+				Type:     schema.TypeString,
+				Optional: true,
+				// DefaultFunc: schema.EnvDefaultFunc("7TV_USERNAME", nil),
+			},
+			"password": {
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
+				// DefaultFunc: schema.EnvDefaultFunc("7TV_PASSWORD", nil),
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"hashicups_order": emoteset.New(),
+			"emoteset": emoteset.New(),
 		},
 		// DataSourcesMap: map[string]*schema.Resource{
 		// 	"hashicups_coffees":     dataSourceCoffees(),
