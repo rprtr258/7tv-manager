@@ -13,7 +13,7 @@ provider "seventv" {
 }
 
 resource "seventv_emoteset" "main_emoteset" {
-  name = "testset"
+  name = "testset2"
   emotes {
     id = "61801776e0801fb98788c028"
     name = "MMMM"

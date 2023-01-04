@@ -17,7 +17,7 @@ type Emote struct {
 type EmoteSet struct {
 	ID     string
 	Name   string
-	Emotes map[string]Emote
+	Emotes []Emote
 }
 
 type Api interface {
@@ -241,10 +241,10 @@ func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
 	return EmoteSet{
 		ID:   response.Data.EmoteSet.ID,
 		Name: response.Data.EmoteSet.Name,
-		Emotes: lo.Associate(
+		Emotes: lo.Map(
 			response.Data.EmoteSet.Emotes,
-			func(emote ResponseEmote) (string, Emote) {
-				return emote.Name, Emote{
+			func(emote ResponseEmote, _ int) Emote {
+				return Emote{
 					ID:   emote.ID,
 					Name: emote.Name,
 				}

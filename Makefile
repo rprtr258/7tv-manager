@@ -33,5 +33,5 @@ example-plan: install
 	cd examples && rm -rf .terraform* && terraform init && terraform validate && TF_LOG=WARN terraform plan
 
 example-reflex:
-	reflex -r '\.(go|tf)$' -- make example-plan
+	reflex -r '\.(go|tf)$$' -- make example-plan
 

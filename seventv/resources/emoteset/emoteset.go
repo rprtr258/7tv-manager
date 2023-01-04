@@ -107,13 +107,11 @@ func read(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagn
 		"data": emoteSet,
 	})
 	emotes := []any{}
-	for name, emote := range emoteSet.Emotes {
-		if _, ok := emoteSet.Emotes[name]; !ok {
-			emotes = append(emotes, map[string]any{
-				"id":   emote.ID,
-				"name": emote.Name,
-			})
-		}
+	for _, emote := range emoteSet.Emotes {
+		emotes = append(emotes, map[string]any{
+			"id":   emote.ID,
+			"name": emote.Name,
+		})
 	}
 
 	if err := d.Set("emotes", emotes); err != nil {
