@@ -26,7 +26,7 @@ type Api interface {
 	UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error)
 	DeleteEmoteSet(emoteSetID string) error
 
-	CreateEmoteBinding(emoteSetID, emoteID string, emoteName *string) error
+	AddEmoteToSet(emoteSetID, emoteID string, emoteName *string) error
 	GetEmoteBinding(emoteSetID, emoteID string) error
 	// UpdateEmoteBinding(emoteSetID, emoteID string, emoteName *string) error
 	DeleteEmoteBinding(emoteSetID, emoteID string) error
@@ -427,7 +427,7 @@ func (p *api) updateEmoteInSet(action, emoteSetID, emoteID, emoteName string) er
 	)
 }
 
-func (p *api) CreateEmoteBinding(emoteSetID, emoteID string, emoteName *string) error {
+func (p *api) AddEmoteToSet(emoteSetID, emoteID string, emoteName *string) error {
 	if emoteName == nil {
 		// TODO: extract emote name
 		return errors.New("not implemented")
@@ -442,5 +442,5 @@ func (p *api) GetEmoteBinding(emoteSetID, emoteID string) error {
 
 func (p *api) DeleteEmoteBinding(emoteSetID, emoteID string) error {
 	// TODO: extract emote name for last arg?
-	return p.updateEmoteInSet("DELETE", emoteSetID, emoteID, "")
+	return p.updateEmoteInSet("REMOVE", emoteSetID, emoteID, "")
 }
