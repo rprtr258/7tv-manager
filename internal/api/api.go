@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/samber/lo"
 )
 
 type Emote struct {
@@ -15,7 +17,7 @@ type Emote struct {
 type EmoteSet struct {
 	ID     string
 	Name   string
-	Emotes []Emote
+	Emotes map[string]Emote
 }
 
 type Api interface {
@@ -35,6 +37,7 @@ type Api interface {
 type api struct {
 	apiEndpoint string
 	token       string
+	// TODO: http.Client
 }
 
 func NewClient(username, password *string) (Api, error) {
@@ -49,11 +52,329 @@ func (p *api) CreateEmoteSet(name string) (string, error) {
 }
 
 func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
-	return EmoteSet{}, errors.New("not implemented")
+	type Variables struct {
+		ID string `json:"id"`
+	}
+
+	type Payload struct {
+		OperationName string    `json:"operationName"`
+		Variables     Variables `json:"variables"`
+		Query         string    `json:"query"`
+	}
+	data := Payload{
+		Variables: Variables{
+			ID: emoteSetID,
+		},
+		OperationName: "GetEmoteSet",
+		Query: `query GetEmoteSet(
+			$id: ObjectID!,
+			$formats: [ImageFormat!]
+		) {
+			emoteSet(id: $id) {
+				id
+				name
+				flags
+				capacity
+				origins {
+					id
+					weight
+					__typename
+				}
+				emotes {
+					id
+					name
+					actor {
+						id
+						display_name
+						avatar_url
+						__typename
+						}
+					origin_id
+					data {
+						id
+						name
+						flags
+						states
+						lifecycle
+						host {
+							url
+							files(formats: $formats) {
+								name
+								format
+								__typename
+							}
+							__typename
+						}
+						owner {
+							id
+							display_name
+							style {
+								color
+								__typename
+							}
+							roles
+							__typename
+						}
+						__typename
+					}
+					__typename
+				}
+				owner {
+					id
+					username
+					display_name
+					style {
+						color
+						__typename
+					}
+					avatar_url
+					roles
+					connections {
+						id
+						display_name
+						emote_capacity
+						platform
+						__typename
+					}
+					__typename
+				}
+				__typename
+			}
+		}`,
+	}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		return EmoteSet{}, err
+	}
+	body := bytes.NewReader(payloadBytes)
+
+	req, err := http.NewRequest("POST", p.apiEndpoint, body)
+	if err != nil {
+		return EmoteSet{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return EmoteSet{}, err
+	}
+	defer resp.Body.Close()
+
+	type ResponseEmote struct {
+		ID    string `json:"id"`
+		Name  string `json:"name"`
+		Actor struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"display_name"`
+			AvatarURL   string `json:"avatar_url"`
+			Typename    string `json:"__typename"`
+		} `json:"actor"`
+		OriginID interface{} `json:"origin_id"`
+		Data     struct {
+			ID        string   `json:"id"`
+			Name      string   `json:"name"`
+			Flags     int      `json:"flags"`
+			States    []string `json:"states"`
+			Lifecycle int      `json:"lifecycle"`
+			Host      struct {
+				URL   string `json:"url"`
+				Files []struct {
+					Name     string `json:"name"`
+					Format   string `json:"format"`
+					Typename string `json:"__typename"`
+				} `json:"files"`
+				Typename string `json:"__typename"`
+			} `json:"host"`
+			Owner struct {
+				ID          string `json:"id"`
+				DisplayName string `json:"display_name"`
+				Style       struct {
+					Color    int    `json:"color"`
+					Typename string `json:"__typename"`
+				} `json:"style"`
+				Roles    []string `json:"roles"`
+				Typename string   `json:"__typename"`
+			} `json:"owner"`
+			Typename string `json:"__typename"`
+		} `json:"data"`
+		Typename string `json:"__typename"`
+	}
+	type Response struct {
+		Data struct {
+			EmoteSet struct {
+				ID       string          `json:"id"`
+				Name     string          `json:"name"`
+				Flags    int             `json:"flags"`
+				Capacity int             `json:"capacity"`
+				Origins  []interface{}   `json:"origins"`
+				Emotes   []ResponseEmote `json:"emotes"`
+				Owner    struct {
+					ID          string `json:"id"`
+					Username    string `json:"username"`
+					DisplayName string `json:"display_name"`
+					Style       struct {
+						Color    int    `json:"color"`
+						Typename string `json:"__typename"`
+					} `json:"style"`
+					AvatarURL   string   `json:"avatar_url"`
+					Roles       []string `json:"roles"`
+					Connections []struct {
+						ID            string `json:"id"`
+						DisplayName   string `json:"display_name"`
+						EmoteCapacity int    `json:"emote_capacity"`
+						Platform      string `json:"platform"`
+						Typename      string `json:"__typename"`
+					} `json:"connections"`
+					Typename string `json:"__typename"`
+				} `json:"owner"`
+				Typename string `json:"__typename"`
+			} `json:"emoteSet"`
+		} `json:"data"`
+	}
+
+	var response Response
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return EmoteSet{}, err
+	}
+
+	return EmoteSet{
+		ID:   response.Data.EmoteSet.ID,
+		Name: response.Data.EmoteSet.Name,
+		Emotes: lo.Associate(
+			response.Data.EmoteSet.Emotes,
+			func(emote ResponseEmote) (string, Emote) {
+				return emote.Name, Emote{
+					ID:   emote.ID,
+					Name: emote.Name,
+				}
+			},
+		),
+	}, nil
 }
 
 func (p *api) UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error) {
-	return EmoteSet{}, errors.New("not implemented")
+	type VariableData struct {
+		Name     string  `json:"name"`
+		Capacity int     `json:"capacity"`
+		Origins  *string `json:"origins"`
+	}
+	type Variables struct {
+		ID   string       `json:"id"`
+		Data VariableData `json:"data"`
+	}
+
+	type Payload struct {
+		OperationName string    `json:"operationName"`
+		Variables     Variables `json:"variables"`
+		Query         string    `json:"query"`
+	}
+
+	data := Payload{
+		Variables: Variables{
+			ID: emoteSetID,
+			Data: VariableData{
+				Name:     "Coopert1n0",
+				Capacity: 300,
+				Origins:  nil,
+			},
+		},
+		OperationName: "UpdateEmoteSet",
+		Query: `mutation UpdateEmoteSet(
+			$id: ObjectID!,
+			$data: UpdateEmoteSetInput!
+		) {
+			emoteSet(id: $id) {
+				update(data: $data) {
+					id
+					name
+					__typename
+				}
+				__typename
+			}
+		}`,
+	}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		return EmoteSet{}, err
+	}
+	body := bytes.NewReader(payloadBytes)
+
+	req, err := http.NewRequest("POST", p.apiEndpoint, body)
+	if err != nil {
+		return EmoteSet{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return EmoteSet{}, err
+	}
+	defer resp.Body.Close()
+
+	type ResponseEmote struct {
+		ID    string `json:"id"`
+		Name  string `json:"name"`
+		Actor struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"display_name"`
+			AvatarURL   string `json:"avatar_url"`
+			Typename    string `json:"__typename"`
+		} `json:"actor"`
+		OriginID interface{} `json:"origin_id"`
+		Data     struct {
+			ID        string   `json:"id"`
+			Name      string   `json:"name"`
+			Flags     int      `json:"flags"`
+			States    []string `json:"states"`
+			Lifecycle int      `json:"lifecycle"`
+			Host      struct {
+				URL   string `json:"url"`
+				Files []struct {
+					Name     string `json:"name"`
+					Format   string `json:"format"`
+					Typename string `json:"__typename"`
+				} `json:"files"`
+				Typename string `json:"__typename"`
+			} `json:"host"`
+			Owner struct {
+				ID          string `json:"id"`
+				DisplayName string `json:"display_name"`
+				Style       struct {
+					Color    int    `json:"color"`
+					Typename string `json:"__typename"`
+				} `json:"style"`
+				Roles    []string `json:"roles"`
+				Typename string   `json:"__typename"`
+			} `json:"owner"`
+			Typename string `json:"__typename"`
+		} `json:"data"`
+		Typename string `json:"__typename"`
+	}
+	type Response struct {
+		Data struct {
+			EmoteSet struct {
+				Update struct {
+					ID       string `json:"id"`
+					Name     string `json:"name"`
+					Typename string `json:"__typename"`
+				} `json:"update"`
+				Typename string `json:"__typename"`
+			} `json:"emoteSet"`
+		} `json:"data"`
+	}
+
+	var response Response
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return EmoteSet{}, err
+	}
+
+	return EmoteSet{
+		ID:     response.Data.EmoteSet.Update.ID,
+		Name:   response.Data.EmoteSet.Update.Name,
+		Emotes: nil,
+	}, nil
 }
 
 func (p *api) DeleteEmoteSet(emoteSetID string) error {

@@ -2,10 +2,11 @@ package emoteset
 
 import (
 	"context"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/samber/lo"
 
 	"github.com/rprtr258/seventv-tf-provider/internal/api"
 )
@@ -22,9 +23,13 @@ func New() *schema.Resource {
 				// Required: true,
 				Computed: true,
 			},
+			"name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
 			"emotes": {
 				Type:     schema.TypeList,
-				Required: true,
+				Required: true, // TODO: is it?
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
@@ -89,19 +94,29 @@ func create(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 
 func read(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(api.Api)
-
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
-
 	id := d.Id()
+
+	var diags diag.Diagnostics
 
 	emoteSet, err := c.GetEmoteSet(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	orderItems := mapAnyEmotes(emoteSet.Emotes)
-	if err := d.Set("emotes", orderItems); err != nil {
+	tflog.Error(ctx, "Unrecognized API response body", map[string]any{
+		"data": emoteSet,
+	})
+	emotes := []any{}
+	for name, emote := range emoteSet.Emotes {
+		if _, ok := emoteSet.Emotes[name]; !ok {
+			emotes = append(emotes, map[string]any{
+				"id":   emote.ID,
+				"name": emote.Name,
+			})
+		}
+	}
+
+	if err := d.Set("emotes", emotes); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -109,38 +124,25 @@ func read(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagn
 }
 
 func update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	// c := m.(api.Api)
-
-	// orderID := d.Id()
+	c := m.(api.Api)
+	id := d.Id()
 
 	if !d.HasChange("emotes") {
 		return read(ctx, d, m)
 	}
 
-	// items := d.Get("items").([]interface{})
-	// ois := []hc.OrderItem{}
+	emotes := d.Get("emotes").([]any)
+	_ = lo.Map(
+		emotes,
+		func(emote any, _ int) api.Emote {
+			return api.Emote{}
+		},
+	)
 
-	// for _, item := range items {
-	// 	i := item.(map[string]interface{})
-
-	// 	co := i["coffee"].([]interface{})[0]
-	// 	coffee := co.(map[string]interface{})
-
-	// 	oi := hc.OrderItem{
-	// 		Coffee: hc.Coffee{
-	// 			ID: coffee["id"].(int),
-	// 		},
-	// 		Quantity: i["quantity"].(int),
-	// 	}
-	// 	ois = append(ois, oi)
-	// }
-
-	// _, err := c.UpdateOrder(orderID, ois, &c.Token)
-	// if err != nil {
-	// 	return diag.FromErr(err)
-	// }
-
-	d.Set("last_updated", time.Now().Format(time.RFC850))
+	_, err := c.UpdateEmoteSet(id, "abobus")
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	return read(ctx, d, m)
 }
@@ -163,21 +165,4 @@ func delete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 	d.SetId("")
 
 	return diags
-}
-
-func mapAnyEmotes(emotes []api.Emote) []interface{} {
-	if emotes == nil {
-		return make([]interface{}, 0)
-	}
-
-	ois := make([]interface{}, len(emotes))
-
-	for i, emote := range emotes {
-		ois[i] = map[string]interface{}{
-			"id":   emote.ID,
-			"name": emote.Name,
-		}
-	}
-
-	return ois
 }
