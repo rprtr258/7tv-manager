@@ -96,6 +96,10 @@ func (p *api) CreateEmoteSet(name string) (string, error) {
 }
 
 func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
+	type Variables struct {
+		ID string `json:"id"`
+	}
+
 	query := `query GetEmoteSet(
 			$id: ObjectID!,
 			$formats: [ImageFormat!]
@@ -246,16 +250,16 @@ func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
 
 	var response Response
 
-	p.apiCall(
+	if err := p.apiCall(
 		"GetEmoteSet",
-		struct {
-			ID string `json:"id"`
-		}{
+		Variables{
 			ID: emoteSetID,
 		},
 		query,
 		&response,
-	)
+	); err != nil {
+		return EmoteSet{}, err
+	}
 
 	return EmoteSet{
 		ID:   response.Data.EmoteSet.ID,
@@ -283,23 +287,7 @@ func (p *api) UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error) {
 		Data VariableData `json:"data"`
 	}
 
-	type Payload struct {
-		OperationName string    `json:"operationName"`
-		Variables     Variables `json:"variables"`
-		Query         string    `json:"query"`
-	}
-
-	data := Payload{
-		Variables: Variables{
-			ID: emoteSetID,
-			Data: VariableData{
-				Name:     name,
-				Capacity: 300,
-				Origins:  nil,
-			},
-		},
-		OperationName: "UpdateEmoteSet",
-		Query: `mutation UpdateEmoteSet(
+	query := `mutation UpdateEmoteSet(
 			$id: ObjectID!,
 			$data: UpdateEmoteSetInput!
 		) {
@@ -311,26 +299,7 @@ func (p *api) UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error) {
 				}
 				__typename
 			}
-		}`,
-	}
-	payloadBytes, err := json.Marshal(data)
-	if err != nil {
-		return EmoteSet{}, err
-	}
-	body := bytes.NewReader(payloadBytes)
-
-	req, err := http.NewRequest("POST", p.apiEndpoint, body)
-	if err != nil {
-		return EmoteSet{}, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return EmoteSet{}, err
-	}
-	defer resp.Body.Close()
+		}`
 
 	type ResponseEmote struct {
 		ID    string `json:"id"`
@@ -385,7 +354,20 @@ func (p *api) UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error) {
 	}
 
 	var response Response
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+
+	if err := p.apiCall(
+		"UpdateEmoteSet",
+		Variables{
+			ID: emoteSetID,
+			Data: VariableData{
+				Name:     name,
+				Capacity: 300,
+				Origins:  nil,
+			},
+		},
+		query,
+		&response,
+	); err != nil {
 		return EmoteSet{}, err
 	}
 
