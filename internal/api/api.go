@@ -382,42 +382,49 @@ func (p *api) DeleteEmoteSet(emoteSetID string) error {
 	return errors.New("not implemented")
 }
 
-func (p *api) changeEmoteInSet(action, emoteSetID, emoteID, emoteName string) error {
-	bts, err := json.Marshal(
-		map[string]any{
-			"operationName": "ChangeEmoteInSet",
-			"variables": map[string]string{
-				"action":   action, // "ADD",
-				"id":       emoteSetID,
-				"emote_id": emoteID,   // "61801776e0801fb98788c028",
-				"name":     emoteName, // "MMMM"
-			},
-			"query": `mutation ChangeEmoteInSet(
-				$id: ObjectID!,
-				$action: ListItemAction!,
-				$emote_id: ObjectID!,
-				$name: String
-			) {
-				emoteSet(id: $id) {
-				    id
-				    emotes(id: $emote_id, action: $action, name: $name) {
-						id
-						name
-						__typename
-					}
-					__typename
-				}
-			}`,
-		},
-	)
-	if err != nil {
-		return err
+func (p *api) updateEmoteInSet(action, emoteSetID, emoteID, emoteName string) error {
+	type Variables struct {
+		Action     string `json:"action"` // "ADD",
+		EmoteSetID string `json:"id"`
+		EmoteID    string `json:"emote_id"` // "61801776e0801fb98788c028",
+		Name       string `json:"name"`     // "MMMM"
 	}
 
-	body := bytes.NewReader(bts)
+	query := `mutation ChangeEmoteInSet(
+		$id: ObjectID!,
+		$action: ListItemAction!,
+		$emote_id: ObjectID!,
+		$name: String
+	) {
+		emoteSet(id: $id) {
+		    id
+		    emotes(
+				id: $emote_id,
+				action: $action,
+				name: $name
+			) {
+				id
+				name
+				__typename
+			}
+			__typename
+		}
+	}`
 
-	_, err = http.NewRequest("POST", p.apiEndpoint, body)
-	return err
+	// TODO: emote set returned
+	var response map[string]any
+
+	return p.apiCall(
+		"ChangeEmoteInSet",
+		Variables{
+			Action:     action,
+			EmoteSetID: emoteSetID,
+			EmoteID:    emoteID,
+			Name:       emoteName,
+		},
+		query,
+		&response,
+	)
 }
 
 func (p *api) CreateEmoteBinding(emoteSetID, emoteID string, emoteName *string) error {
@@ -426,7 +433,7 @@ func (p *api) CreateEmoteBinding(emoteSetID, emoteID string, emoteName *string) 
 		return errors.New("not implemented")
 	}
 
-	return p.changeEmoteInSet("ADD", emoteSetID, emoteID, *emoteName)
+	return p.updateEmoteInSet("ADD", emoteSetID, emoteID, *emoteName)
 }
 
 func (p *api) GetEmoteBinding(emoteSetID, emoteID string) error {
@@ -435,5 +442,5 @@ func (p *api) GetEmoteBinding(emoteSetID, emoteID string) error {
 
 func (p *api) DeleteEmoteBinding(emoteSetID, emoteID string) error {
 	// TODO: extract emote name for last arg?
-	return p.changeEmoteInSet("DELETE", emoteSetID, emoteID, "")
+	return p.updateEmoteInSet("DELETE", emoteSetID, emoteID, "")
 }
