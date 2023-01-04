@@ -12,37 +12,34 @@ Visit the [`boilerplate`](https://github.com/hashicorp/terraform-provider-hashic
 
 Run the following command to build the provider
 
-```shell
-$ go build -o terraform-provider-hashicups
+```bash
+make build
 ```
 
 ## Local release build
 
-```shell
-$ go install github.com/goreleaser/goreleaser@latest
-```
-
-```shell
-$ make release
+```bash
+make release
 ```
 
 You will find the releases in the `/dist` directory. You will need to rename the provider binary to `terraform-provider-hashicups` and move the binary into [the appropriate subdirectory within the user plugins directory](https://learn.hashicorp.com/tutorials/terraform/provider-use?in=terraform/providers#install-hashicups-provider).
+
 ## Test sample configuration
 
 First, build and install the provider.
 
-```shell
-$ make install
+```bash
+make install
 ```
 
 Then, navigate to the `examples` directory. 
 
-```shell
-$ cd examples
+```bash
+cd examples
 ```
 
 Run the following command to initialize the workspace and apply the sample configuration.
 
-```shell
-$ terraform init && terraform apply
+```bash
+terraform init && terraform apply
 ```

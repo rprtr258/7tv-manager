@@ -1,4 +1,4 @@
-package seventv
+package provider
 
 import (
 	"context"
@@ -7,37 +7,33 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/rprtr258/seventv-tf-provider/internal/api"
+	"github.com/rprtr258/seventv-tf-provider/seventv/resources/emoteset"
 )
 
-// Provider - 7tv emotes terraform provider
-func Provider() *schema.Provider {
+// New - 7tv emotes terraform provider
+func New() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"host": &schema.Schema{
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HASHICUPS_HOST", nil),
-			},
-			"username": &schema.Schema{
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HASHICUPS_USERNAME", nil),
-			},
-			"password": &schema.Schema{
-				Type:        schema.TypeString,
-				Optional:    true,
-				Sensitive:   true,
-				DefaultFunc: schema.EnvDefaultFunc("HASHICUPS_PASSWORD", nil),
-			},
+			// "username": &schema.Schema{
+			// 	Type:        schema.TypeString,
+			// 	Optional:    true,
+			// 	DefaultFunc: schema.EnvDefaultFunc("7TV_USERNAME", nil),
+			// },
+			// "password": &schema.Schema{
+			// 	Type:        schema.TypeString,
+			// 	Optional:    true,
+			// 	Sensitive:   true,
+			// 	DefaultFunc: schema.EnvDefaultFunc("7TV_PASSWORD", nil),
+			// },
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"hashicups_order": resourceOrder(),
+			"hashicups_order": emoteset.New(),
 		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"hashicups_coffees":     dataSourceCoffees(),
-			"hashicups_order":       dataSourceOrder(),
-			"hashicups_ingredients": dataSourceIngredients(),
-		},
+		// DataSourcesMap: map[string]*schema.Resource{
+		// 	"hashicups_coffees":     dataSourceCoffees(),
+		// 	"hashicups_order":       dataSourceOrder(),
+		// 	"hashicups_ingredients": dataSourceIngredients(),
+		// },
 		ConfigureContextFunc: providerConfigure,
 	}
 }

@@ -1,9 +1,9 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
-HOSTNAME=hashicorp.com
-NAMESPACE=edu
-NAME=hashicups
+HOSTNAME=local
+NAMESPACE=rprtr258
+NAME=seventv
 BINARY=terraform-provider-${NAME}
-VERSION=0.3.1
+VERSION=0.0.0
 OS_ARCH=linux_amd64
 
 default: install
@@ -12,6 +12,7 @@ build:
 	go build -o ${BINARY}
 
 release:
+	go install github.com/goreleaser/goreleaser@latest
 	goreleaser release --rm-dist --snapshot --skip-publish  --skip-sign
 
 install: build
