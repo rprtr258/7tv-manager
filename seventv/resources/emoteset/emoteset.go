@@ -126,6 +126,7 @@ func read(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagn
 func update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(api.Api)
 	id := d.Id()
+	name := d.Get("name").(string)
 
 	if !d.HasChange("emotes") {
 		return read(ctx, d, m)
@@ -139,7 +140,7 @@ func update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 		},
 	)
 
-	_, err := c.UpdateEmoteSet(id, "abobus")
+	_, err := c.UpdateEmoteSet(id, name)
 	if err != nil {
 		return diag.FromErr(err)
 	}

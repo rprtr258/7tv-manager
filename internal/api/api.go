@@ -274,7 +274,7 @@ func (p *api) UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error) {
 		Variables: Variables{
 			ID: emoteSetID,
 			Data: VariableData{
-				Name:     "Coopert1n0",
+				Name:     name,
 				Capacity: 300,
 				Origins:  nil,
 			},

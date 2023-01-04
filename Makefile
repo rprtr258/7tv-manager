@@ -25,3 +25,13 @@ test:
 
 testacc: 
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m   
+
+example-apply: install
+	cd examples && rm -rf .terraform* && terraform init && terraform validate && TF_LOG=WARN terraform apply
+
+example-plan: install
+	cd examples && rm -rf .terraform* && terraform init && terraform validate && TF_LOG=WARN terraform plan
+
+example-reflex:
+	reflex -r '\.(go|tf)$' -- make example-plan
+
