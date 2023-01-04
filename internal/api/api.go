@@ -47,26 +47,56 @@ func NewClient(username, password *string) (Api, error) {
 	}, nil
 }
 
+func (p *api) apiCall(
+	operationName string,
+	variables any,
+	query string,
+	response any,
+) error {
+	payload := struct {
+		OperationName string `json:"operationName"`
+		Variables     any    `json:"variables"`
+		Query         string `json:"query"`
+	}{
+		OperationName: operationName,
+		Variables:     variables,
+		Query:         query,
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	body := bytes.NewReader(payloadBytes)
+
+	req, err := http.NewRequest("POST", p.apiEndpoint, body)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *api) CreateEmoteSet(name string) (string, error) {
 	return "63b58083c032521d3d256191", nil
 }
 
 func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
-	type Variables struct {
-		ID string `json:"id"`
-	}
-
-	type Payload struct {
-		OperationName string    `json:"operationName"`
-		Variables     Variables `json:"variables"`
-		Query         string    `json:"query"`
-	}
-	data := Payload{
-		Variables: Variables{
-			ID: emoteSetID,
-		},
-		OperationName: "GetEmoteSet",
-		Query: `query GetEmoteSet(
+	query := `query GetEmoteSet(
 			$id: ObjectID!,
 			$formats: [ImageFormat!]
 		) {
@@ -140,26 +170,7 @@ func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
 				}
 				__typename
 			}
-		}`,
-	}
-	payloadBytes, err := json.Marshal(data)
-	if err != nil {
-		return EmoteSet{}, err
-	}
-	body := bytes.NewReader(payloadBytes)
-
-	req, err := http.NewRequest("POST", p.apiEndpoint, body)
-	if err != nil {
-		return EmoteSet{}, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return EmoteSet{}, err
-	}
-	defer resp.Body.Close()
+		}`
 
 	type ResponseEmote struct {
 		ID    string `json:"id"`
@@ -234,9 +245,17 @@ func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
 	}
 
 	var response Response
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return EmoteSet{}, err
-	}
+
+	p.apiCall(
+		"GetEmoteSet",
+		struct {
+			ID string `json:"id"`
+		}{
+			ID: emoteSetID,
+		},
+		query,
+		&response,
+	)
 
 	return EmoteSet{
 		ID:   response.Data.EmoteSet.ID,
