@@ -9,15 +9,11 @@ import (
 	"github.com/samber/lo"
 )
 
-type Emote struct {
+type EmoteSet struct {
 	ID   string
 	Name string
-}
-
-type EmoteSet struct {
-	ID     string
-	Name   string
-	Emotes []Emote
+	// Emotes ids by name in pack
+	Emotes map[string]string
 }
 
 type Api interface {
@@ -26,7 +22,7 @@ type Api interface {
 	UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error)
 	DeleteEmoteSet(emoteSetID string) error
 
-	AddEmoteToSet(emoteSetID, emoteID string, emoteName *string) error
+	AddEmoteToSet(emoteSetID, emoteID, emoteName string) error
 	GetEmoteBinding(emoteSetID, emoteID string) error
 	// UpdateEmoteBinding(emoteSetID, emoteID string, emoteName *string) error
 	DeleteEmoteBinding(emoteSetID, emoteID string) error
@@ -264,13 +260,10 @@ func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
 	return EmoteSet{
 		ID:   response.Data.EmoteSet.ID,
 		Name: response.Data.EmoteSet.Name,
-		Emotes: lo.Map(
+		Emotes: lo.Associate(
 			response.Data.EmoteSet.Emotes,
-			func(emote ResponseEmote, _ int) Emote {
-				return Emote{
-					ID:   emote.ID,
-					Name: emote.Name,
-				}
+			func(emote ResponseEmote) (string, string) {
+				return emote.Name, emote.ID
 			},
 		),
 	}, nil
@@ -427,13 +420,8 @@ func (p *api) updateEmoteInSet(action, emoteSetID, emoteID, emoteName string) er
 	)
 }
 
-func (p *api) AddEmoteToSet(emoteSetID, emoteID string, emoteName *string) error {
-	if emoteName == nil {
-		// TODO: extract emote name
-		return errors.New("not implemented")
-	}
-
-	return p.updateEmoteInSet("ADD", emoteSetID, emoteID, *emoteName)
+func (p *api) AddEmoteToSet(emoteSetID, emoteID, emoteName string) error {
+	return p.updateEmoteInSet("ADD", emoteSetID, emoteID, emoteName)
 }
 
 func (p *api) GetEmoteBinding(emoteSetID, emoteID string) error {

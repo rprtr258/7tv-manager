@@ -18,30 +18,17 @@ func New() *schema.Resource {
 		UpdateContext: update,
 		DeleteContext: delete,
 		Schema: map[string]*schema.Schema{
-			"id": {
-				Type: schema.TypeString,
-				// Required: true,
-				Computed: true,
-			},
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 			"emotes": {
-				Type:     schema.TypeList,
-				Required: true, // TODO: is it?
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Optional: true,
-						},
-					},
+				Type:     schema.TypeMap,
+				Required: true,
+				Elem: &schema.Schema{
+					Type:     schema.TypeString,
+					Optional: true,
+					Computed: true,
 				},
 			},
 		},
@@ -53,41 +40,27 @@ func New() *schema.Resource {
 
 func create(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(api.Api)
+	name := d.Get("name").(string)
+	emotesAny := d.Get("emotes")
 
 	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
 
-	name := d.Get("name").(string)
-	// items := d.Get("emotes").([]interface{})
-	// emoteSet := []api.EmoteSet{}
-
-	// for _, item := range items {
-	// 	i := item.(map[string]interface{})
-
-	// 	emoteID := i["id"].(string)
-	// 	emoteName := i["name"].(string)
-
-	// 	oi := api.EmoteSet{
-	// 		ID: "",
-	// 		Emotes: []api.Emote{
-	// 			{
-	// 				ID:   emoteID,
-	// 				Name: emoteName,
-	// 			},
-	// 		},
-	// 	}
-
-	// 	emoteSet = append(emoteSet, oi)
-	// }
+	// diags = append(diags, read(ctx, d, m)...)
 
 	id, err := c.CreateEmoteSet(name)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(id)
+	emotes := mapEmotesList(emotesAny)
+	for emoteID, emoteName := range emotes {
+		if err := c.AddEmoteToSet(id, emoteID, emoteName); err != nil {
+			return diag.FromErr(err)
+		}
+	}
 
-	read(ctx, d, m)
+	d.SetId(id)
 
 	return diags
 }
@@ -103,12 +76,15 @@ func read(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagn
 		return diag.FromErr(err)
 	}
 
-	emotes := []any{}
-	for _, emote := range emoteSet.Emotes {
-		emotes = append(emotes, map[string]any{
-			"id":   emote.ID,
-			"name": emote.Name,
-		})
+	emotes := map[string]any{}
+	for emoteName, emoteID := range emoteSet.Emotes {
+		emotes[emoteID] = emoteName
+	}
+
+	d.SetId(emoteSet.ID)
+
+	if err := d.Set("name", emoteSet.Name); err != nil {
+		return diag.FromErr(err)
 	}
 
 	if err := d.Set("emotes", emotes); err != nil {
@@ -124,6 +100,7 @@ func update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 	name := d.Get("name").(string)
 	oldEmotesAny, newEmotesAny := d.GetChange("emotes")
 
+	// TODO: name changed?
 	if !d.HasChange("emotes") {
 		return read(ctx, d, m)
 	}
@@ -140,64 +117,70 @@ func update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 	oldEmotes := mapEmotesList(oldEmotesAny)
 	newEmotes := mapEmotesList(newEmotesAny)
 
-	deletedEmotes, _, createdEmotes := diffLists(oldEmotes, newEmotes)
+	for emoteID, update := range diffSets(oldEmotes, newEmotes) {
+		switch {
+		case update.oldName != nil && update.newName == nil:
+			if err := c.DeleteEmoteBinding(id, emoteID); err != nil {
+				return diag.FromErr(err)
+			}
+		case update.oldName == nil && update.newName != nil:
+			if err := c.AddEmoteToSet(id, emoteID, *update.newName); err != nil {
+				return diag.FromErr(err)
+			}
+		case update.oldName != nil && update.newName != nil:
+			if *update.oldName == *update.newName {
+				continue
+			}
 
-	for _, emote := range deletedEmotes {
-		if err := c.DeleteEmoteBinding(id, emote.ID); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	for _, emote := range createdEmotes {
-		if err := c.AddEmoteToSet(id, emote.ID, &emote.Name); err != nil {
-			return diag.FromErr(err)
+			// TODO: rename
+			if err := c.DeleteEmoteBinding(id, emoteID); err != nil {
+				return diag.FromErr(err)
+			}
+			if err := c.AddEmoteToSet(id, emoteID, *update.newName); err != nil {
+				return diag.FromErr(err)
+			}
+		case update.oldName == nil && update.newName == nil:
+			return diag.Errorf("id=%s, no old, nor new names", emoteID)
 		}
 	}
 
 	return read(ctx, d, m)
 }
 
-func diffLists[T comparable](old, new []T) (
-	deleted []T,
-	stayed []T, // TODO: better name
-	created []T,
-) {
-	oldSet := make(map[T]struct{}, len(old))
-	for _, elem := range old {
-		oldSet[elem] = struct{}{}
-	}
-
-	newSet := make(map[T]struct{}, len(new))
-	for _, elem := range new {
-		newSet[elem] = struct{}{}
-	}
-
-	for _, elem := range old {
-		if _, ok := newSet[elem]; !ok {
-			deleted = append(deleted, elem)
-		} else {
-			stayed = append(stayed, elem)
-		}
-	}
-
-	for _, elem := range new {
-		if _, ok := oldSet[elem]; !ok {
-			created = append(created, elem)
-		}
-	}
-
-	return
+type updateKind struct {
+	oldName *string
+	newName *string
 }
 
-func mapEmotesList(emotes any) []api.Emote {
-	return lo.Map(
-		emotes.([]any),
-		func(emote any, _ int) api.Emote {
-			emoteMap := emote.(map[string]any)
-			return api.Emote{
-				ID:   emoteMap["id"].(string),
-				Name: emoteMap["name"].(string),
+func diffSets(old, new map[string]string) map[string]*updateKind {
+	updates := map[string]*updateKind{}
+
+	for emoteID, emoteName := range old {
+		emoteName := emoteName
+		updates[emoteID] = &updateKind{
+			oldName: &emoteName,
+		}
+	}
+
+	for emoteID, emoteName := range new {
+		emoteName := emoteName
+		if _, ok := updates[emoteID]; !ok {
+			updates[emoteID] = &updateKind{
+				newName: &emoteName,
 			}
+		} else {
+			updates[emoteID].newName = &emoteName
+		}
+	}
+
+	return updates
+}
+
+func mapEmotesList(emotes any) map[string]string {
+	return lo.MapEntries(
+		emotes.(map[string]any),
+		func(emoteID string, emoteName any) (string, string) {
+			return emoteID, emoteName.(string)
 		},
 	)
 }
