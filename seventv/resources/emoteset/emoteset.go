@@ -3,7 +3,6 @@ package emoteset
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/samber/lo"
@@ -48,14 +47,14 @@ func create(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 
 	// diags = append(diags, read(ctx, d, m)...)
 
-	id, err := c.CreateEmoteSet(name)
+	id, err := c.EmoteSet().Create(name)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	emotes := mapEmotesList(emotesAny)
 	for emoteID, emoteName := range emotes {
-		if err := c.AddEmoteToSet(id, emoteID, emoteName); err != nil {
+		if err := c.Emote().AddToSet(id, emoteID, emoteName); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -71,7 +70,7 @@ func read(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagn
 
 	var diags diag.Diagnostics
 
-	emoteSet, err := c.GetEmoteSet(id)
+	emoteSet, err := c.EmoteSet().Read(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -105,11 +104,7 @@ func update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 		return read(ctx, d, m)
 	}
 
-	tflog.Error(ctx, "xdd", map[string]any{
-		"data": newEmotesAny,
-	})
-
-	_, err := c.UpdateEmoteSet(id, name)
+	_, err := c.EmoteSet().UpdateName(id, name)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -120,11 +115,11 @@ func update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 	for emoteID, update := range diffSets(oldEmotes, newEmotes) {
 		switch {
 		case update.oldName != nil && update.newName == nil:
-			if err := c.DeleteEmoteBinding(id, emoteID); err != nil {
+			if err := c.Emote().RemoveFromSet(id, emoteID); err != nil {
 				return diag.FromErr(err)
 			}
 		case update.oldName == nil && update.newName != nil:
-			if err := c.AddEmoteToSet(id, emoteID, *update.newName); err != nil {
+			if err := c.Emote().AddToSet(id, emoteID, *update.newName); err != nil {
 				return diag.FromErr(err)
 			}
 		case update.oldName != nil && update.newName != nil:
@@ -132,11 +127,7 @@ func update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 				continue
 			}
 
-			// TODO: rename
-			if err := c.DeleteEmoteBinding(id, emoteID); err != nil {
-				return diag.FromErr(err)
-			}
-			if err := c.AddEmoteToSet(id, emoteID, *update.newName); err != nil {
+			if err := c.Emote().UpdateName(id, emoteID, *update.newName); err != nil {
 				return diag.FromErr(err)
 			}
 		case update.oldName == nil && update.newName == nil:
@@ -193,7 +184,7 @@ func delete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 
 	id := d.Id()
 
-	err := c.DeleteEmoteSet(id)
+	err := c.EmoteSet().Delete(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}

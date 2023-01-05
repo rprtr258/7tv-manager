@@ -13,7 +13,7 @@ func dataSourceOrder() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceEmoteSetRead,
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
+			"id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -65,7 +65,7 @@ func dataSourceEmoteSetRead(ctx context.Context, d *schema.ResourceData, m inter
 
 	id := d.Get("id").(string)
 
-	emoteSet, err := c.GetEmoteSet(id)
+	emoteSet, err := c.EmoteSet().Read(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}

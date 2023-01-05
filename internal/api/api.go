@@ -16,18 +16,23 @@ type EmoteSet struct {
 	Emotes map[string]string
 }
 
+type ApiEmoteSet interface {
+	Create(name string) (emoteSetID string, err error)
+	Read(emoteSetID string) (EmoteSet, error)
+	UpdateName(emoteSetID, name string) (EmoteSet, error)
+	Delete(emoteSetID string) error
+}
+
+type ApiEmote interface {
+	AddToSet(emoteSetID, emoteID, emoteName string) error
+	Read(emoteSetID, emoteID string) error
+	UpdateName(emoteSetID, emoteID string, emoteName string) error
+	RemoveFromSet(emoteSetID, emoteID string) error
+}
+
 type Api interface {
-	CreateEmoteSet(name string) (emoteSetID string, err error)
-	GetEmoteSet(emoteSetID string) (EmoteSet, error)
-	UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error)
-	DeleteEmoteSet(emoteSetID string) error
-
-	AddEmoteToSet(emoteSetID, emoteID, emoteName string) error
-	GetEmoteBinding(emoteSetID, emoteID string) error
-	// UpdateEmoteBinding(emoteSetID, emoteID string, emoteName *string) error
-	DeleteEmoteBinding(emoteSetID, emoteID string) error
-
-	// GetEmote(emoteID string) (Emote, error)
+	EmoteSet() ApiEmoteSet
+	Emote() ApiEmote
 }
 
 type api struct {
@@ -37,13 +42,13 @@ type api struct {
 }
 
 func NewClient(username, password *string) (Api, error) {
-	return &api{
+	return api{
 		apiEndpoint: "https://7tv.io/v3/gql",
 		token:       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1IjoiNjNiNTgwMmFlYmZiYzJkYzRkZjI4ODQ3IiwidiI6MCwiaXNzIjoiN1RWLUFQSS1SRVNUIiwiZXhwIjoxNjgwNzIzMjEwfQ.nnQROcsz1Wjlmzfloin2qaihdeZnT9kpfyIp9tx9izw",
 	}, nil
 }
 
-func (p *api) apiCall(
+func (p api) apiCall(
 	operationName string,
 	variables any,
 	query string,
@@ -87,11 +92,17 @@ func (p *api) apiCall(
 	return nil
 }
 
-func (p *api) CreateEmoteSet(name string) (string, error) {
+type apiEmoteSet api
+
+func (p api) EmoteSet() ApiEmoteSet {
+	return apiEmoteSet(p)
+}
+
+func (p apiEmoteSet) Create(name string) (string, error) {
 	return "63b58083c032521d3d256191", nil
 }
 
-func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
+func (p apiEmoteSet) Read(emoteSetID string) (EmoteSet, error) {
 	type Variables struct {
 		ID string `json:"id"`
 	}
@@ -246,7 +257,7 @@ func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
 
 	var response Response
 
-	if err := p.apiCall(
+	if err := api(p).apiCall(
 		"GetEmoteSet",
 		Variables{
 			ID: emoteSetID,
@@ -269,7 +280,7 @@ func (p *api) GetEmoteSet(emoteSetID string) (EmoteSet, error) {
 	}, nil
 }
 
-func (p *api) UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error) {
+func (p apiEmoteSet) UpdateName(emoteSetID, name string) (EmoteSet, error) {
 	type VariableData struct {
 		Name     string  `json:"name"`
 		Capacity int     `json:"capacity"`
@@ -348,7 +359,7 @@ func (p *api) UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error) {
 
 	var response Response
 
-	if err := p.apiCall(
+	if err := api(p).apiCall(
 		"UpdateEmoteSet",
 		Variables{
 			ID: emoteSetID,
@@ -371,11 +382,17 @@ func (p *api) UpdateEmoteSet(emoteSetID, name string) (EmoteSet, error) {
 	}, nil
 }
 
-func (p *api) DeleteEmoteSet(emoteSetID string) error {
+func (p apiEmoteSet) Delete(emoteSetID string) error {
 	return errors.New("not implemented")
 }
 
-func (p *api) updateEmoteInSet(action, emoteSetID, emoteID, emoteName string) error {
+type apiEmote api
+
+func (p api) Emote() ApiEmote {
+	return apiEmote(p)
+}
+
+func (p apiEmote) updateEmoteInSet(action, emoteSetID, emoteID, emoteName string) error {
 	type Variables struct {
 		Action     string `json:"action"` // "ADD",
 		EmoteSetID string `json:"id"`
@@ -407,7 +424,7 @@ func (p *api) updateEmoteInSet(action, emoteSetID, emoteID, emoteName string) er
 	// TODO: emote set returned
 	var response map[string]any
 
-	return p.apiCall(
+	return api(p).apiCall(
 		"ChangeEmoteInSet",
 		Variables{
 			Action:     action,
@@ -420,15 +437,19 @@ func (p *api) updateEmoteInSet(action, emoteSetID, emoteID, emoteName string) er
 	)
 }
 
-func (p *api) AddEmoteToSet(emoteSetID, emoteID, emoteName string) error {
+func (p apiEmote) AddToSet(emoteSetID, emoteID, emoteName string) error {
 	return p.updateEmoteInSet("ADD", emoteSetID, emoteID, emoteName)
 }
 
-func (p *api) GetEmoteBinding(emoteSetID, emoteID string) error {
+func (p apiEmote) UpdateName(emoteSetID, emoteID, emoteName string) error {
+	return p.updateEmoteInSet("UPDATE", emoteSetID, emoteID, emoteName)
+}
+
+func (p apiEmote) Read(emoteSetID, emoteID string) error {
 	return errors.New("not implemented")
 }
 
-func (p *api) DeleteEmoteBinding(emoteSetID, emoteID string) error {
+func (p apiEmote) RemoveFromSet(emoteSetID, emoteID string) error {
 	// TODO: extract emote name for last arg?
 	return p.updateEmoteInSet("REMOVE", emoteSetID, emoteID, "")
 }
