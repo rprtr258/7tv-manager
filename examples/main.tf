@@ -13,8 +13,9 @@ provider "seventv" {
 }
 
 resource "seventv_emoteset" "main_emoteset" {
-  name = "testset2"
+  name = "OtricatelnoAdekvatniy's Emotes"
   emotes = {
+    "62b44833cae6625a55fe96a0" = "wideCallMeHand"
     "603eace1115b55000d7282db" = "Pepega"
     "6040a8bccf6746000db10348" = "pepeJAM"
     "6072a16fdcae02001b44e614" = "pepeD"
@@ -158,7 +159,7 @@ resource "seventv_emoteset" "main_emoteset" {
     "60af03597e8706b57220e8ce" = "peepoGiggles"
     "60aea37298f42914708d6416" = "peepoShake"
     "60e5d610a69fc8d27f2737b7" = "Stare"
-    "610867c7363c6fa6edefce4f" = "blushW"
+    "636a8c1a9546127cead63037" = "blushW"
     "61ad15a315b3ff4a5bb9980b" = "CheNaxyi"
     "60aea4a5f6a2c3b33234e76d" = "RoflanEbalo"
     "62a3ace22b24f7ba48b728c4" = "stare"
