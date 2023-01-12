@@ -13,8 +13,10 @@ provider "seventv" {
 }
 
 resource "seventv_emoteset" "main_emoteset" {
-  name = "OtricatelnoAdekvatniy's Emotes"
+  name = "emotes"
   emotes = {
+    "60b0e88a726e10b6646f2454" = "BillyHerringtonEnjoyer"
+    "611af1ac5f3378ee3350037c" = "funnywhitecat5"
     "62b44833cae6625a55fe96a0" = "wideCallMeHand"
     "603eace1115b55000d7282db" = "Pepega"
     "6040a8bccf6746000db10348" = "pepeJAM"
@@ -284,7 +286,7 @@ resource "seventv_emoteset" "main_emoteset" {
     "6227790faf1b8e166ce3da8a" = "uzyPhonk"
     "60ae6b98117ec68ca44b3608" = "PogChamping"
     "60eca09b741d620b761712a5" = "PauseShake"
-    "61801776e0801fb98788c028" = "RIBA"
+    "61801776e0801fb98788c028" = "MMMM"
     "63616306b6d442f4536373a7" = "happi"
     "611693909bf574f1fded7890" = "WhoAsked"
     "60ae920eac03cad607d3a2a5" = "peepoWhat"
