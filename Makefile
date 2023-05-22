@@ -1,40 +1,9 @@
-TEST?=$$(go list ./... | grep -v 'vendor')
-HOSTNAME=local
-NAMESPACE=rprtr258
-NAME=seventv
-BINARY=terraform-provider-${NAME}
-VERSION=0.0.1
-OS_ARCH=linux_amd64
+TOKEN := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1IjoiNjNiNTgwMmFlYmZiYzJkYzRkZjI4ODQ3IiwidiI6MCwiaXNzIjoic2V2ZW50di1hcGkiLCJleHAiOjE2OTI1NDMwOTYsIm5iZiI6MTY4NDc2NzA5NiwiaWF0IjoxNjg0NzY3MDk2fQ.DCW35XYMV9LvsV_0YWvofQjJsaQ28Qijw7qeePLVjT8"
+EMOTESET_ID := "63b58083c032521d3d256191"
+7TV := go run cmd/7tv/main.go
 
-default: install
+push:
+	@${7TV} push --token ${TOKEN} --config examples/push.jsonnet
 
-build:
-	go build -o ${BINARY}
-
-release:
-	go install github.com/goreleaser/goreleaser@latest
-	goreleaser release --rm-dist --snapshot --skip-publish  --skip-sign
-
-install: build
-	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
-	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
-
-test:
-	go test -i $(TEST) || exit 1
-	echo $(TEST) | xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
-
-testacc:
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
-
-clear:
-	cd examples && rm -rf .terraform* terraform* && terraform init
-
-example-apply: install
-	cd examples && TF_LOG=WARN terraform apply
-
-example-plan: install
-	cd examples && terraform validate && TF_LOG=WARN terraform plan
-
-example-reflex:
-	reflex -r '\.(go|tf)$$' -- make example-plan
-
+pull:
+	@${7TV} pull --token ${TOKEN} --config examples/pull.jsonnet --id ${EMOTESET_ID}

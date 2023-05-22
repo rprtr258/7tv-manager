@@ -39,36 +39,24 @@ func New() *schema.Provider {
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
+	token := d.Get("token").(string)
 
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
-
-	if (username != "") && (password != "") {
-		c, err := api.NewClient(&username, &password)
-		if err != nil {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Unable to create HashiCups client",
-				Detail:   "Unable to authenticate user for authenticated HashiCups client",
-			})
-
-			return nil, diags
-		}
-
-		return c, diags
+	if token == "" {
+		return nil, []diag.Diagnostic{{
+			Severity: diag.Error,
+			Summary:  "Invalid credentials",
+			Detail:   "No token provided",
+		}}
 	}
 
-	c, err := api.NewClient(nil, nil)
+	c, err := api.NewClient("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1IjoiNjE1MDZlYzM0M2IyZDlkYTBkMzI4ZGMwIiwidiI6MSwiaXNzIjoiN1RWLUFQSS1SRVNUIiwiZXhwIjoxNjgwODE1MjE4fQ.bHajGpk4LT5SuT1vqqpfu1fJznX4Gp3PRaad67NC9P4")
 	if err != nil {
-		diags = append(diags, diag.Diagnostic{
+		return nil, []diag.Diagnostic{{
 			Severity: diag.Error,
 			Summary:  "Unable to create HashiCups client",
-			Detail:   "Unable to create anonymous HashiCups client",
-		})
-		return nil, diags
+			Detail:   "Unable to authenticate user for authenticated HashiCups client",
+		}}
 	}
 
-	return c, diags
+	return c, nil
 }

@@ -12,7 +12,7 @@ import (
 type EmoteSet struct {
 	ID   string
 	Name string
-	// Emotes ids by name in pack
+	// Emotes names by id
 	Emotes map[string]string
 }
 
@@ -41,10 +41,10 @@ type api struct {
 	// TODO: http.Client
 }
 
-func NewClient(username, password *string) (Api, error) {
+func NewClient(token string) (Api, error) {
 	return api{
 		apiEndpoint: "https://7tv.io/v3/gql",
-		token:       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1IjoiNjNiNTgwMmFlYmZiYzJkYzRkZjI4ODQ3IiwidiI6MCwiaXNzIjoiN1RWLUFQSS1SRVNUIiwiZXhwIjoxNjgwNzIzMjEwfQ.nnQROcsz1Wjlmzfloin2qaihdeZnT9kpfyIp9tx9izw",
+		token:       token,
 	}, nil
 }
 
@@ -99,7 +99,7 @@ func (p api) EmoteSet() ApiEmoteSet {
 }
 
 func (p apiEmoteSet) Create(name string) (string, error) {
-	return "63b58083c032521d3d256191", nil
+	return "emote set id", errors.New("not implemented")
 }
 
 func (p apiEmoteSet) Read(emoteSetID string) (EmoteSet, error) {
@@ -135,7 +135,7 @@ func (p apiEmoteSet) Read(emoteSetID string) (EmoteSet, error) {
 						id
 						name
 						flags
-						states
+						state
 						lifecycle
 						host {
 							url
@@ -197,7 +197,7 @@ func (p apiEmoteSet) Read(emoteSetID string) (EmoteSet, error) {
 			ID        string   `json:"id"`
 			Name      string   `json:"name"`
 			Flags     int      `json:"flags"`
-			States    []string `json:"states"`
+			States    []string `json:"state"`
 			Lifecycle int      `json:"lifecycle"`
 			Host      struct {
 				URL   string `json:"url"`
@@ -305,45 +305,6 @@ func (p apiEmoteSet) UpdateName(emoteSetID, name string) (EmoteSet, error) {
 			}
 		}`
 
-	type ResponseEmote struct {
-		ID    string `json:"id"`
-		Name  string `json:"name"`
-		Actor struct {
-			ID          string `json:"id"`
-			DisplayName string `json:"display_name"`
-			AvatarURL   string `json:"avatar_url"`
-			Typename    string `json:"__typename"`
-		} `json:"actor"`
-		OriginID interface{} `json:"origin_id"`
-		Data     struct {
-			ID        string   `json:"id"`
-			Name      string   `json:"name"`
-			Flags     int      `json:"flags"`
-			States    []string `json:"states"`
-			Lifecycle int      `json:"lifecycle"`
-			Host      struct {
-				URL   string `json:"url"`
-				Files []struct {
-					Name     string `json:"name"`
-					Format   string `json:"format"`
-					Typename string `json:"__typename"`
-				} `json:"files"`
-				Typename string `json:"__typename"`
-			} `json:"host"`
-			Owner struct {
-				ID          string `json:"id"`
-				DisplayName string `json:"display_name"`
-				Style       struct {
-					Color    int    `json:"color"`
-					Typename string `json:"__typename"`
-				} `json:"style"`
-				Roles    []string `json:"roles"`
-				Typename string   `json:"__typename"`
-			} `json:"owner"`
-			Typename string `json:"__typename"`
-		} `json:"data"`
-		Typename string `json:"__typename"`
-	}
 	type Response struct {
 		Data struct {
 			EmoteSet struct {
