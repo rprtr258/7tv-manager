@@ -42,11 +42,6 @@ func create(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 	name := d.Get("name").(string)
 	emotesAny := d.Get("emotes")
 
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
-
-	// diags = append(diags, read(ctx, d, m)...)
-
 	id, err := c.EmoteSet().Create(name)
 	if err != nil {
 		return diag.FromErr(err)
@@ -61,7 +56,7 @@ func create(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Dia
 
 	d.SetId(id)
 
-	return diags
+	return nil
 }
 
 func read(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
