@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/go-jsonnet"
 	"github.com/rprtr258/log"
 	"github.com/urfave/cli/v2"
 
@@ -109,13 +110,13 @@ var (
 			token := ctx.String("token")
 			configPath := ctx.String("config")
 
-			configBytes, err := os.ReadFile(configPath)
+			jsonStr, err := jsonnet.MakeVM().EvaluateFile(configPath)
 			if err != nil {
-				return fmt.Errorf("read config %s: %w", configPath, err)
+				return fmt.Errorf("evaluate jsonnet %s: %w", configPath, err)
 			}
 
 			var config Config
-			if err := json.Unmarshal(configBytes, &config); err != nil {
+			if err := json.Unmarshal([]byte(jsonStr), &config); err != nil {
 				return fmt.Errorf("parse config: %w", err)
 			}
 
