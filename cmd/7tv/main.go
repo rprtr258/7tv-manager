@@ -9,7 +9,7 @@ import (
 	"github.com/rprtr258/log"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rprtr258/seventv-tf-provider/internal/api"
+	"github.com/rprtr258/7tv-manager/internal/api"
 )
 
 func mapDiff(old, new map[string]string) (toRemove, toAdd map[string]string) {
@@ -89,7 +89,6 @@ var (
 			}
 
 			return nil
-
 		},
 	}
 	_cmdPush = &cli.Command{
@@ -152,7 +151,6 @@ var (
 			}
 
 			return nil
-
 		},
 	}
 	_app = &cli.App{

@@ -1,4 +1,4 @@
-module github.com/rprtr258/seventv-tf-provider
+module github.com/rprtr258/7tv-manager
 
 go 1.19
 
