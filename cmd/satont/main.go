@@ -10,26 +10,6 @@ import (
 	"github.com/rprtr258/7tv-manager/internal/api"
 )
 
-func mapDiff(old, new map[string]string) (toRemove, toAdd map[string]string) {
-	toRemove = map[string]string{}
-	for name, oldEmoteID := range old {
-		newEmoteID, ok := new[name]
-		if !ok || oldEmoteID != newEmoteID {
-			toRemove[name] = oldEmoteID
-		}
-	}
-
-	toAdd = map[string]string{}
-	for name, newEmoteID := range new {
-		oldEmoteID, ok := old[name]
-		if !ok || oldEmoteID != newEmoteID {
-			toAdd[name] = newEmoteID
-		}
-	}
-
-	return
-}
-
 type EmotesetConfig struct {
 	Name   string            `json:"name"`
 	Emotes map[string]string `json:"emotes"`
