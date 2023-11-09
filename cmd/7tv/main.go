@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/google/go-jsonnet"
-	"github.com/rprtr258/log"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rprtr258/7tv-manager/internal/api"
@@ -133,14 +133,14 @@ var (
 				toRemove, toAdd := mapDiff(actualEmoteset.Emotes, emoteset.Emotes)
 
 				for name, emoteID := range toRemove {
-					log.Infof("removing emote", log.F{"name": name, "emoteID": emoteID})
+					log.Info().Str("name", name).Str("emoteID", emoteID).Msg("removing emote")
 					if err := client.Emote().RemoveFromSet(emotesetID, emoteID); err != nil {
 						return fmt.Errorf("remove emoteID=%q name=%q: %w", emoteID, name, err)
 					}
 				}
 
 				for name, emoteID := range toAdd {
-					log.Infof("adding emote", log.F{"name": name, "emoteID": emoteID})
+					log.Info().Str("name", name).Str("emoteID", emoteID).Msg("adding emote")
 					if err := client.Emote().AddToSet(emotesetID, emoteID, name); err != nil {
 						return fmt.Errorf(
 							"add emoteID=%s name=%s to setID=%s: %w",
@@ -168,6 +168,6 @@ var (
 
 func main() {
 	if err := _app.Run(os.Args); err != nil {
-		log.Fatal(err.Error())
+		log.Fatal().Err(err).Send()
 	}
 }

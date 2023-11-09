@@ -12,7 +12,7 @@ import (
 type EmoteSet struct {
 	ID   string
 	Name string
-	// Emotes names by id
+	// Emotes id by name
 	Emotes map[string]string
 }
 

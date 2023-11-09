@@ -9,3 +9,8 @@
     - если нужно пушить в емоутсет, отличный от того, из которого мы пулили, то заменяем емоутсет id в [examples/push.jsonnet](examples/push.jsonnet)
 1. запускаем `make push`
 1. по всем вопросам писать автору в телеграм или в `issues`
+
+## for satont aka fukushine aka vahuienjoyer aka yuphoriaenjoyer
+```bash
+go run github.com/rprtr258/7tv-manager/cmd/satont@latest --token <7tv-auth-token> --from <emoteset-id> --to <emoteset-id>
+```

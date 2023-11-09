@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rprtr258/log"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rprtr258/7tv-manager/internal/api"
@@ -52,8 +53,18 @@ var _app = &cli.App{
 			return fmt.Errorf("get setID=%s: %w", emoteSetIDFrom, err)
 		}
 
+		emotesetTo, err := client.EmoteSet().Read(emoteSetIDTo)
+		if err != nil {
+			return fmt.Errorf("get setID=%s: %w", emoteSetIDTo, err)
+		}
+
 		for name, emoteID := range emotesetFrom.Emotes {
-			log.Infof("adding emote", log.F{"name": name, "emoteID": emoteID})
+			if emoteID2, ok := emotesetTo.Emotes[name]; ok && emoteID2 == emoteID {
+				log.Debug().Str("name", name).Str("emoteID", emoteID).Msg("skipping emote")
+				continue
+			}
+
+			log.Info().Str("name", name).Str("emoteID", emoteID).Msg("adding emote")
 			if err := client.Emote().AddToSet(emoteSetIDTo, emoteID, name); err != nil {
 				return fmt.Errorf(
 					"add emoteID=%s name=%s to setID=%s: %w",
@@ -67,7 +78,8 @@ var _app = &cli.App{
 }
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	if err := _app.Run(os.Args); err != nil {
-		log.Fatal(err.Error())
+		log.Fatal().Err(err).Send()
 	}
 }
